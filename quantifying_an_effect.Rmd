@@ -1,0 +1,984 @@
+---
+output: html_document
+---
+<center><h2>Deaths, Injuries, and Property Damages related to Weather</h2></center>            
+<center><h3>From January 1, 1950 until November 30, 2011</h3></center>
+
+<center>U.S. National Oceanic and Atmospheric Administration</center>
+
+<br>
+Author: Russ Robbins
+
+<a href='https://github.com/robbinsr/quantifying_an_effect/blob/master/README.md'>Affiliated Code Repository (right click, and open new window or tab)</a>
+
+<h4>Executive Summary</h4>
+
+Your office asked NOAA to report on the primary weather causes of deaths, injuries, and property damages over the past two generations. Specifically, you asked:
+
+1. Across the United States, which types of events are most harmful with respect to population health?
+
+2. Across the United States, which types of events have the greatest economic consequences?
+
+The weather events most harmful to public health are tornados, heat, and floods. Weather events with the greatest economic consequences are tornados, other high wind events, and floods. Please see Figures 1, 2, and 3 below.
+
+
+```{r include=FALSE}
+noaa<-read.csv(bzfile("repdata-data-StormData.csv.bz2"))
+library(ggplot2)
+library(stats)
+library(knitr)
+library(gridExtra)
+library(gridBase)
+library(gridGraphics)
+```
+
+
+```{r echo=FALSE}
+fse<-noaa[,c("FATALITIES", "INJURIES", "PROPDMG", "STATE","EVTYPE")]
+ft<-aggregate(FATALITIES ~ EVTYPE, data=fse, sum)
+it<-aggregate(INJURIES ~ EVTYPE, data=fse, sum)
+pt<-aggregate(PROPDMG ~ EVTYPE, data=fse, sum)
+
+ftnz<-ft[ft$FATALITIES>0,]
+ftnz<-ftnz[order(ftnz$FATALITIES),] 
+
+ftnz$TYPE<-"x"
+
+ptnz<-pt[pt$PROPDMG>0,]
+ptnz<-ptnz[order(ptnz$PROPDMG),] 
+ptnz$TYPE<-"x"
+
+ftnz$TYPE<-ifelse(grepl("drowning",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Water Accident",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("marine",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Water Accident",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("slide",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Land/Mudslide",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("avalanche",ftnz$EVTYPE,ignore.case=TRUE),                   "Rain",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("avalance",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Rain",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("fire",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Fire",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("fog",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Fog",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("storm",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Rain",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("lightning",ftnz$EVTYPE,ignore.case=TRUE),                 "Lightning",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("rain",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Rain",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("current",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Waves",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("swell",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Waves",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("surf",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Waves",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("seas",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Waves",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("wave",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Waves",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("fld",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Flood",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("high water",ftnz$EVTYPE,ignore.case=TRUE),"Flood",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("flood",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Flood",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("rising",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Flood",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("snow",ftnz$EVTYPE,ignore.case=TRUE),"Snow",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("blizzard",ftnz$EVTYPE,ignore.case=TRUE),"Snow",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("sleet",ftnz$EVTYPE,ignore.case=TRUE),"Ice",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("hail",ftnz$EVTYPE,ignore.case=TRUE),"Ice",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("mix",ftnz$EVTYPE,ignore.case=TRUE),"Ice",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("wind",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Wind",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("microburst",ftnz$EVTYPE,ignore.case=TRUE),"Wind",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("dust",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Wind",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("freez",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Ice",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("glaze",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Ice",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("icy",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Ice",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("ice",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Ice",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("heat",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Heat",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("winter",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Cold",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("thermia",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Cold",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("low temperature",ftnz$EVTYPE,ignore.case=TRUE), "Cold",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("frost",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Cold",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("cold",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Cold",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("tsunami",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Waves",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("hurricane",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Hurricane",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("waterspout",ftnz$EVTYPE,ignore.case=TRUE),"Tornado",ftnz$TYPE)
+ftnz$TYPE<-ifelse(grepl("tornado",ftnz$EVTYPE,ignore.case=TRUE),
+                   "Tornado",ftnz$TYPE)
+
+ftnzp<-aggregate(FATALITIES ~ TYPE, data=ftnz, sum)
+ftnzp<-ftnzp[order(ftnzp$FATALITIES),]
+ftnzp<-ftnzp[ftnzp$FATALITIES>10,]
+x_order<-factor(ftnzp$TYPE)
+
+ftnzp$TYPE <- factor(ftnzp$TYPE, levels = c("Water Accident",
+                          "Land/Mudslide",
+                          "Fog",
+                          "Fire",
+                          "Hurricane",
+                          "Ice",
+                          "Snow",
+                          "Rain",
+                          "Cold",
+                          "Waves",
+                          "Lightning",
+                          "Wind",
+                          "Flood",
+                          "Heat",
+                          "Tornado"))
+
+ftnzp<-ftnzp[c("TYPE","FATALITIES")]
+
+library(grid)
+
+my_grob1 = grobTree(textGrob("Caption: Number of deaths by weather.", x=0.005,  y=0.92, hjust=0,
+  gp=gpar(col="black", fontsize=15)))
+
+ggplot(ftnzp, aes(x = ftnzp$TYPE, y = ftnzp$FATALITIES, fill=ftnzp$TYPE)) + geom_bar(stat = "identity") + theme(axis.text.x=element_text(angle=-90,hjust=0,vjust=0.5)) + labs(title = "FIGURE 1: WEATHER & DEATHS", x = "WEATHER EVENT TYPE", y = "NUMBER") + scale_fill_discrete(name="Weather Event Type") +
+  annotation_custom(my_grob1)
+
+```
+
+```{r echo=FALSE}
+
+itnz<-it[it$INJURIES>0,]
+itnz<-itnz[order(itnz$INJURIES),] 
+itnz$TYPE<-"x"
+
+itnz$TYPE<-ifelse(grepl("other",itnz$EVTYPE,ignore.case=TRUE),
+                   "Other",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("drowning",itnz$EVTYPE,ignore.case=TRUE),
+                   "Water Accident",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("marine",itnz$EVTYPE,ignore.case=TRUE),
+                   "Water Accident",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("slide",itnz$EVTYPE,ignore.case=TRUE),
+                   "Land/Mudslide",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("avalanche",itnz$EVTYPE,ignore.case=TRUE),
+                   "Rain",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("avalance",itnz$EVTYPE,ignore.case=TRUE),
+                   "Rain",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("fire",itnz$EVTYPE,ignore.case=TRUE),
+                   "Fire",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("fog",itnz$EVTYPE,ignore.case=TRUE),
+                   "Fog",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("storm",itnz$EVTYPE,ignore.case=TRUE),
+                   "Rain",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("lightning",itnz$EVTYPE,ignore.case=TRUE),
+                   "Lightning",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("rain",itnz$EVTYPE,ignore.case=TRUE),
+                   "Rain",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("current",itnz$EVTYPE,ignore.case=TRUE),
+                   "Waves",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("swell",itnz$EVTYPE,ignore.case=TRUE),
+                   "Waves",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("surf",itnz$EVTYPE,ignore.case=TRUE),
+                   "Waves",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("seas",itnz$EVTYPE,ignore.case=TRUE),
+                   "Waves",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("wave",itnz$EVTYPE,ignore.case=TRUE),
+                   "Waves",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("fld",itnz$EVTYPE,ignore.case=TRUE),
+                   "Flood",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("high water",itnz$EVTYPE,ignore.case=TRUE),"Flood",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("flood",itnz$EVTYPE,ignore.case=TRUE),
+                   "Flood",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("rising",itnz$EVTYPE,ignore.case=TRUE),
+                   "Flood",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("snow",itnz$EVTYPE,ignore.case=TRUE),"Snow",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("blizzard",itnz$EVTYPE,ignore.case=TRUE),"Snow",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("sleet",itnz$EVTYPE,ignore.case=TRUE),"Ice",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("hail",itnz$EVTYPE,ignore.case=TRUE),"Ice",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("mix",itnz$EVTYPE,ignore.case=TRUE),"Ice",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("High",itnz$EVTYPE,ignore.case=TRUE),
+                   "Wind",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("wind",itnz$EVTYPE,ignore.case=TRUE),
+                   "Wind",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("microburst",itnz$EVTYPE,ignore.case=TRUE),"Wind",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("dust",itnz$EVTYPE,ignore.case=TRUE),
+                   "Wind",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("freez",itnz$EVTYPE,ignore.case=TRUE),
+                   "Ice",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("glaze",itnz$EVTYPE,ignore.case=TRUE),
+                   "Ice",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("icy",itnz$EVTYPE,ignore.case=TRUE),
+                   "Ice",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("ice",itnz$EVTYPE,ignore.case=TRUE),
+                   "Ice",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("warm",itnz$EVTYPE,ignore.case=TRUE),
+                   "Heat",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("drought",itnz$EVTYPE,ignore.case=TRUE),
+                   "Heat",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("heat",itnz$EVTYPE,ignore.case=TRUE),
+                   "Heat",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("winter",itnz$EVTYPE,ignore.case=TRUE),
+                   "Cold",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("thermia",itnz$EVTYPE,ignore.case=TRUE),
+                   "Cold",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("low temperature",itnz$EVTYPE,ignore.case=TRUE), "Cold",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("frost",itnz$EVTYPE,ignore.case=TRUE),
+                   "Cold",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("cold",itnz$EVTYPE,ignore.case=TRUE),
+                   "Cold",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("tsunami",itnz$EVTYPE,ignore.case=TRUE),
+                   "Waves",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("typhoon",itnz$EVTYPE,ignore.case=TRUE),
+                   "Hurricane",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("hurricane",itnz$EVTYPE,ignore.case=TRUE),
+                   "Hurricane",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("funnel",itnz$EVTYPE,ignore.case=TRUE),"Tornado",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("waterspout",itnz$EVTYPE,ignore.case=TRUE),"Tornado",itnz$TYPE)
+itnz$TYPE<-ifelse(grepl("tornado",itnz$EVTYPE,ignore.case=TRUE),
+                   "Tornado",itnz$TYPE)
+itnzp<-aggregate(INJURIES ~ TYPE, data=itnz, sum)
+itnzp<-itnzp[order(itnzp$INJURIES),]
+itnzp<-itnzp[itnzp$INJURIES>10,]
+itnzp<-itnzp[order(itnzp$INJURIES),]
+
+itnzp$TYPE <- factor(itnzp$TYPE, levels = c("Water Accident",
+                          "Land/Mudslide",
+                          "Waves",
+                          "Rain",
+                          "Fog",
+                          "Hurricane",
+                          "Fire",
+                          "Snow",
+                          "Cold",
+                          "Ice",      
+                          "Lightning",
+                          "Flood",
+                          "Heat",                                                                          "Wind",
+                          "Tornado"))
+
+itnzp<-itnzp[c("TYPE","INJURIES")]
+
+library(grid)
+
+my_grob2 = grobTree(textGrob("Caption: Number of injuries by weather.", x=0.005,  y=0.92, hjust=0,
+  gp=gpar(col="black", fontsize=15)))
+
+ggplot(itnzp, aes(x = itnzp$TYPE, y = itnzp$INJURIES, fill=itnzp$TYPE)) + geom_bar(stat = "identity") + theme(axis.text.x=element_text(angle=-90,hjust=0,vjust=0.5)) + labs(title = "FIGURE 2: WEATHER & INJURIES", x = "WEATHER EVENT TYPE", y = "NUMBER") + scale_fill_discrete(name="Weather Event Type") +
+  annotation_custom(my_grob2)
+
+
+
+
+
+
+```
+
+```{r echo=FALSE}
+ptnz<-pt[pt$PROPDMG>0,]
+ptnz<-ptnz[order(ptnz$PROPDMG),] 
+ptnz$TYPE<-"x"
+
+ptnz[c("TYPE")][is.na(ptnz[c("TYPE")])] <- c("Other")
+ptnz$TYPE<-ifelse(grepl("other",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Other",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("?",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Other",ptnz$TYPE)
+
+ptnz$TYPE<-ifelse(grepl("Apache",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Other",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("drowning",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Water Accident",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("marine",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Water Accident",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("slide",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Land/Mudslide",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("avalanche",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Rain",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("avalance",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Rain",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("fire",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Fire",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("fog",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Fog",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("storm",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Rain",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("lightning",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Lightning",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("rain",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Rain",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("current",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Waves",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("swell",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Waves",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("surf",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Waves",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("seas",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Waves",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("wave",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Waves",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("fld",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Flood",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("high water",ptnz$EVTYPE,ignore.case=TRUE),"Flood",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("flood",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Flood",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("rising",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Flood",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("snow",ptnz$EVTYPE,ignore.case=TRUE),"Snow",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("blizzard",ptnz$EVTYPE,ignore.case=TRUE),"Snow",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("sleet",ptnz$EVTYPE,ignore.case=TRUE),"Ice",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("hail",ptnz$EVTYPE,ignore.case=TRUE),"Ice",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("mix",ptnz$EVTYPE,ignore.case=TRUE),"Ice",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("High",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Wind",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("wind",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Wind",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("microburst",ptnz$EVTYPE,ignore.case=TRUE),"Wind",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("dust",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Wind",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("freez",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Ice",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("glaze",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Ice",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("icy",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Ice",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("ice",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Ice",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("warm",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Heat",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("drought",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Heat",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("heat",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Heat",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("winter",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Cold",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("thermia",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Cold",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("low temperature",ptnz$EVTYPE,ignore.case=TRUE), "Cold",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("frost",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Cold",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("cold",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Cold",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("tsunami",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Waves",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("typhoon",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Hurricane",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("hurricane",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Hurricane",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("funnel",ptnz$EVTYPE,ignore.case=TRUE),"Tornado",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("waterspout",ptnz$EVTYPE,ignore.case=TRUE),"Tornado",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("tornado",ptnz$EVTYPE,ignore.case=TRUE),
+                   "Tornado",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("high tide",ptnz$EVTYPE,ignore.case=TRUE), "High/Low Tide",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("high tide",ptnz$EVTYPE,ignore.case=TRUE), "High/Low Tide",ptnz$TYPE)
+ptnz$TYPE<-ifelse(grepl("high surf",ptnz$EVTYPE,ignore.case=TRUE), "Waves",ptnz$TYPE)
+ptnzp<-aggregate(PROPDMG ~ TYPE, data=ptnz, sum)
+ptnzp<-ptnzp[order(ptnzp$PROPDMG),]
+ptnzp<-ptnzp[ptnzp$PROPDMG>100,]
+ptnzp<-ptnzp[order(ptnzp$PROPDMG),]
+
+ptnzp$TYPE <- factor(ptnzp$TYPE, levels = c(
+                          "High/Low Tide",
+                          "Other",
+                          "Heat",
+                          "Waves",
+                          "Fog",
+                          "Land/Mudslide",
+                          "Hurricane",
+                          "Fire",
+                          "Rain",
+                          "Cold",
+                          "Snow",
+                          "Lightning",
+                          "Ice", 
+                          "Flood",
+                          "Wind",
+                          "Tornado"))
+
+ptnzp<-ptnzp[c("TYPE","PROPDMG")]
+library(scales)
+
+my_grob3 = grobTree(textGrob("Caption: Property damages by weather.", x=0.005,  y=0.92, hjust=0,
+  gp=gpar(col="black", fontsize=15)))
+
+ggplot(ptnzp, aes(x = ptnzp$TYPE, y = ptnzp$PROPDMG, fill=ptnzp$TYPE)) + geom_bar(stat = "identity") + theme(axis.text.x=element_text(angle=-90,hjust=0,vjust=0.5)) + labs(title = "FIGURE 3: WEATHER & PROPERTY DAMAGE", x = "WEATHER EVENT TYPE", y = "US DOLLARS") + scale_fill_discrete(name="Weather Event Type") + annotation_custom(my_grob3) + scale_y_continuous(labels = comma) 
+
+```
+
+<h4>Discussion</h4>
+
+**Deaths**
+
+During the second half of the twentieth century and the first decade of this century, weather in the USA has claimed at least 
+15,136 lives. More than one third of the deaths (5664) were from tornados. Just over 3,000 persons perished from heat-related weather events. Floods took the somewhat less, but staggering 1557 lives. More detail is in Table 1 below.
+
+```{r echo=FALSE}
+knitr::opts_chunk$set(cache=FALSE)
+knit_hooks$set(inline = function(x) {
+  prettyNum(x, big.mark=" ")
+})
+options(digits = 2, OutDec = ".")
+ftnzp<-aggregate(FATALITIES ~ TYPE, data=ftnz, sum)
+ftnzp<-ftnzp[order(ftnzp$FATALITIES),]
+ftnzp<-ftnzp[ftnzp$FATALITIES>10,]
+
+Weather<-ftnzp$TYPE
+Deaths<-ftnzp$FATALITIES
+tab<-as.data.frame(cbind(Weather,Deaths))
+colnames(tab)<-c("Weather","Deaths")
+kable(tab)
+```
+
+<center><h4>Table 1: Deaths From Weather (1955-2011)</h4></center>
+
+**Injuries**
+
+During the same time period, tornados were the largest weather related event that caused 91,439 injuries, which accounted for 65% of the total reported injuries. All other weather related injury reportings were a small fraction of this number. Please see Table 2 for more detail.
+
+
+```{r echo=FALSE}
+
+itnzp<-aggregate(INJURIES ~ TYPE, data=itnz, sum)
+itnzp<-itnzp[order(itnzp$INJURIES),]
+itnzp<-itnzp[itnzp$INJURIES>10,]
+
+Weather<-itnzp$TYPE
+Injuries<-itnzp$INJURIES
+tab<-as.data.frame(cbind(Weather,Injuries))
+colnames(tab)<-c("Weather","Injuries")
+kable(tab)
+```
+
+<center><h4>Table 2: Injuries From Weather (1955-2011)</h4></center>
+
+**Property Damages**
+
+Based upon the data provided, during the period 1955 through 2011, tornados cost the United States or its citizens $3,225,513.81. High winds were also economically costly and caused $3,137,447.29 in damage. Finally, the next type of weather event that was similar to these two was flooding, which cost America 
+$2,461,324.54. Please see Table 3 for more detail.
+
+```{r echo=FALSE}
+
+ptnzp<-aggregate(PROPDMG ~ TYPE, data=ptnz, sum)
+ptnzp<-ptnzp[order(ptnzp$PROPDMG),]
+ptnzp<-ptnzp[ptnzp$PROPDMG>100,]
+
+Weather<-ptnzp$TYPE
+PropertyDamage<-ptnzp$PROPDMG
+tab<-as.data.frame(cbind(Weather,PropertyDamage))
+colnames(tab)<-c("Weather","Dollars")
+kable(tab)
+```
+
+<center><h4>Table 3: Property Damage From Weather (1955-2011)</h4></center>
+
+<h4>Steps in the Analysis</h4>
+
+This section describes the reproducible process that can be followed by running the code below. Note that all of the code has been commented out. This can be undone by cutting and pasting the code into NotePad++, and replacing "#" with "". I did this because, as per the instructions no more than three figures could be used...hence I cannot print any here. Note I did not include inline comments in the other sections because the audience is supposed to be a government adminstrator, not a programmer.
+
+1. Here I enter the title, synopsis, and other information alluded to in the instructions.
+```{r}
+# ---
+# output: html_document
+# ---
+# ###Deaths, Injuries, and Property Damages and Weather            
+# Dates: January 1, 1950 - November 30, 2011
+# 
+# U.S. National Oceanic and Atmospheric Administration
+# 
+# **Note to peer reviewer:** Synopsis and Results have ECHO=FALSE on but Data Processing Section has the ENTIRE document ECHO=TRUE and explained. 
+# 
+# ###Synopsis
+# 
+# Your office asked NOAA to report on the primary weather causes of deaths, injuries, and property damages over the past two generations. Specifically, you asked:
+# 
+# 1. Across the United States, which types of events are most harmful with respect to population health?
+# 
+# 2. Across the United States, which types of events have the greatest economic consequences?
+# 
+# The weather events most harmful to public health are tornados, heat, and floods. Weather events with the greatest economic consequences are tornados, other high wind events, and floods. Please see Figures 1, 2, and 3 below.
+# 
+```
+
+2. Here I install and load the packages I use below.
+```{r}
+#  
+# install.packages("ggplot2",repos='http://cran.us.r-project.org')
+# install.packages("stats",repos='http://cran.us.r-project.org')
+# install.packages("pander",repos='http://cran.us.r-project.org')
+# install.packages("knitr",repos='http://cran.us.r-project.org')
+# library(ggplot2)
+# library(stats)
+# library(pander)
+# library(knitr)
+```
+
+
+3. Here I load the NOAA data set from zipped CSV.
+```{r}
+# noaa<-read.csv(bzfile("repdata-data-StormData.csv.bz2"))
+```
+
+4. Here I load the columns from the NOAA dataset that are necessary to answer the two questions in the instructions. I include the STATE column just in case this would be helpful later. I then sum deaths, injuries, and property damages by the event types indicated in the EVTYPE column.
+```{r}
+# fse<-noaa[,c("FATALITIES", "INJURIES", "PROPDMG", "STATE","EVTYPE")]
+# ft<-aggregate(FATALITIES ~ EVTYPE, data=fse, sum)
+# it<-aggregate(INJURIES ~ EVTYPE, data=fse, sum)
+# pt<-aggregate(PROPDMG ~ EVTYPE, data=fse, sum)
+```
+
+5. The EVTYPE data in the data set was incredibly "dirty." There was no way to really find the answer to the two questions without first cleaning the data. I did that for the deaths by weather event data here.
+```{r}
+# ftnz<-ft[ft$FATALITIES>0,]
+# ftnz<-ftnz[order(ftnz$FATALITIES),] 
+# ftnz$TYPE<-"x"
+# 
+# # ftnz$TYPE<-ifelse(grepl("drowning",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Water Accident",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("marine",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Water Accident",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("slide",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Land/Mudslide",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("avalanche",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Rain",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("avalance",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Rain",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("fire",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Fire",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("fog",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Fog",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("storm",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Rain",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("lightning",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Lightning",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("rain",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Rain",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("current",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Waves",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("swell",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Waves",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("surf",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Waves",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("seas",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Waves",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("wave",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Waves",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("fld",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Flood",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("high water",ftnz$EVTYPE,ignore.case=TRUE),"Flood",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("flood",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Flood",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("rising",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Flood",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("snow",ftnz$EVTYPE,ignore.case=TRUE),"Snow",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("blizzard",ftnz$EVTYPE,ignore.case=TRUE),"Snow",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("sleet",ftnz$EVTYPE,ignore.case=TRUE),"Ice",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("hail",ftnz$EVTYPE,ignore.case=TRUE),"Ice",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("mix",ftnz$EVTYPE,ignore.case=TRUE),"Ice",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("wind",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Wind",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("microburst",ftnz$EVTYPE,ignore.case=TRUE),"Wind",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("dust",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Wind",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("freez",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Ice",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("glaze",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Ice",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("icy",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Ice",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("ice",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Ice",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("heat",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Heat",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("winter",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Cold",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("thermia",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Cold",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("low temperature",ftnz$EVTYPE,ignore.case=TRUE), 
+#                    "Cold",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("frost",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Cold",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("cold",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Cold",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("tsunami",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Waves",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("hurricane",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Hurricane",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("waterspout",ftnz$EVTYPE,ignore.case=TRUE),"Tornado",ftnz$TYPE)
+# ftnz$TYPE<-ifelse(grepl("tornado",ftnz$EVTYPE,ignore.case=TRUE),
+#                    "Tornado",ftnz$TYPE)
+```
+
+6. Here again, sum the deaths but now by the reduced number of types. Note that no types were lost, but instead were collapsed together.
+```{r}
+# ftnzp<-aggregate(FATALITIES ~ TYPE, data=ftnz, sum)
+# ftnzp<-ftnzp[order(ftnzp$FATALITIES),]
+# ftnzp<-ftnzp[ftnzp$FATALITIES>10,]
+# x_order<-factor(ftnzp$TYPE)
+```
+
+7. Here I order the TYPE column so that the ggplot2 plot will go from smallest to largest number of deaths.
+```{r}
+# ftnzp$TYPE <- factor(ftnzp$TYPE, levels = c("Water Accident",
+#                           "Land/Mudslide",
+#                           "Fog",
+#                           "Fire",
+#                           "Hurricane",
+#                           "Ice",
+#                           "Snow",
+#                           "Rain",
+#                           "Cold",
+#                           "Waves",
+#                           "Lightning",
+#                           "Wind",
+#                           "Flood",
+#                           "Heat",
+#                           "Tornado"))
+```
+
+8. Here I build Figure 1: Weather & Deaths
+```{r}
+# ftnzp<-ftnzp[c("TYPE","FATALITIES")]
+# 
+# library(grid)
+# 
+# my_grob1 = grobTree(textGrob("Caption: Number of deaths for each type of weather.", x=0.005,  y=0.92, hjust=0,
+#   gp=gpar(col="black", fontsize=15)))
+# 
+# ggplot(ftnzp, aes(x = ftnzp$TYPE, y = ftnzp$FATALITIES, fill=ftnzp$TYPE)) + geom_bar(stat = "identity") + theme(axis.text.x=element_text(angle=-90,hjust=0,vjust=0.5)) + labs(title = "FIGURE 1: WEATHER & DEATHS", x = "WEATHER EVENT TYPE", y = "NUMBER") + scale_fill_discrete(name="Weather Event Type") +
+#   annotation_custom(my_grob1)
+# 
+```
+
+9. Steps 1 through 8 are now performed on the Injuries data.
+```{r}
+# ```{r echo=FALSE}
+# 
+# itnz<-it[it$INJURIES>0,]
+# itnz<-itnz[order(itnz$INJURIES),] 
+# itnz$TYPE<-"x"
+# 
+# itnz$TYPE<-ifelse(grepl("other",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Other",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("drowning",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Water Accident",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("marine",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Water Accident",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("slide",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Land/Mudslide",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("avalanche",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Rain",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("avalance",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Rain",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("fire",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Fire",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("fog",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Fog",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("storm",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Rain",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("lightning",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Lightning",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("rain",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Rain",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("current",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Waves",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("swell",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Waves",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("surf",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Waves",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("seas",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Waves",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("wave",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Waves",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("fld",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Flood",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("high water",itnz$EVTYPE,ignore.case=TRUE),"Flood",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("flood",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Flood",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("rising",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Flood",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("snow",itnz$EVTYPE,ignore.case=TRUE),"Snow",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("blizzard",itnz$EVTYPE,ignore.case=TRUE),"Snow",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("sleet",itnz$EVTYPE,ignore.case=TRUE),"Ice",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("hail",itnz$EVTYPE,ignore.case=TRUE),"Ice",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("mix",itnz$EVTYPE,ignore.case=TRUE),"Ice",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("High",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Wind",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("wind",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Wind",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("microburst",itnz$EVTYPE,ignore.case=TRUE),"Wind",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("dust",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Wind",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("freez",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Ice",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("glaze",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Ice",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("icy",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Ice",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("ice",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Ice",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("warm",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Heat",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("drought",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Heat",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("heat",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Heat",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("winter",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Cold",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("thermia",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Cold",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("low temperature",itnz$EVTYPE,ignore.case=TRUE), "Cold",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("frost",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Cold",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("cold",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Cold",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("tsunami",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Waves",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("typhoon",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Hurricane",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("hurricane",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Hurricane",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("funnel",itnz$EVTYPE,ignore.case=TRUE),"Tornado",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("waterspout",itnz$EVTYPE,ignore.case=TRUE),"Tornado",itnz$TYPE)
+# itnz$TYPE<-ifelse(grepl("tornado",itnz$EVTYPE,ignore.case=TRUE),
+#                    "Tornado",itnz$TYPE)
+# itnzp<-aggregate(INJURIES ~ TYPE, data=itnz, sum)
+# itnzp<-itnzp[order(itnzp$INJURIES),]
+# itnzp<-itnzp[itnzp$INJURIES>10,]
+# itnzp<-itnzp[order(itnzp$INJURIES),]
+# 
+# itnzp$TYPE <- factor(itnzp$TYPE, levels = c("Water Accident",
+#                           "Land/Mudslide",
+#                           "Waves",
+#                           "Rain",
+#                           "Fog",
+#                           "Hurricane",
+#                           "Fire",
+#                           "Snow",
+#                           "Cold",
+#                           "Ice",      
+#                           "Lightning",
+#                           "Flood",
+#                           "Heat",                                                                          "Wind",
+#                           "Tornado"))
+# 
+# itnzp<-itnzp[c("TYPE","INJURIES")]
+# 
+# library(grid)
+# 
+# my_grob2 = grobTree(textGrob("Caption: Number of injuries for each type of weather.", x=0.005,  y=0.92, hjust=0,
+#   gp=gpar(col="black", fontsize=15)))
+# 
+# ggplot(itnzp, aes(x = itnzp$TYPE, y = itnzp$INJURIES, fill=itnzp$TYPE)) + geom_bar(stat = "identity") + theme(axis.text.x=element_text(angle=-90,hjust=0,vjust=0.5)) + labs(title = "FIGURE 2: WEATHER & INJURIES", x = "WEATHER EVENT TYPE", y = "NUMBER") + scale_fill_discrete(name="Weather Event Type") +
+#   annotation_custom(my_grob2)
+# 
+```
+
+10. Steps 1 through 8 are now performed on the Property Damage data. 
+```{r}
+
+
+# ptnz<-pt[pt$PROPDMG>0,]
+# ptnz<-ptnz[order(ptnz$PROPDMG),] 
+# ptnz$TYPE<-"x"
+# 
+# ptnz[c("TYPE")][is.na(ptnz[c("TYPE")])] <- c("Other")
+# ptnz$TYPE<-ifelse(grepl("other",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Other",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("?",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Other",ptnz$TYPE)
+# 
+# ptnz$TYPE<-ifelse(grepl("Apache",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Other",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("drowning",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Water Accident",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("marine",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Water Accident",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("slide",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Land/Mudslide",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("avalanche",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Rain",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("avalance",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Rain",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("fire",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Fire",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("fog",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Fog",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("storm",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Rain",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("lightning",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Lightning",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("rain",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Rain",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("current",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Waves",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("swell",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Waves",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("surf",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Waves",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("seas",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Waves",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("wave",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Waves",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("fld",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Flood",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("high water",ptnz$EVTYPE,ignore.case=TRUE),"Flood",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("flood",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Flood",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("rising",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Flood",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("snow",ptnz$EVTYPE,ignore.case=TRUE),"Snow",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("blizzard",ptnz$EVTYPE,ignore.case=TRUE),"Snow",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("sleet",ptnz$EVTYPE,ignore.case=TRUE),"Ice",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("hail",ptnz$EVTYPE,ignore.case=TRUE),"Ice",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("mix",ptnz$EVTYPE,ignore.case=TRUE),"Ice",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("High",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Wind",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("wind",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Wind",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("microburst",ptnz$EVTYPE,ignore.case=TRUE),"Wind",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("dust",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Wind",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("freez",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Ice",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("glaze",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Ice",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("icy",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Ice",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("ice",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Ice",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("warm",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Heat",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("drought",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Heat",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("heat",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Heat",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("winter",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Cold",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("thermia",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Cold",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("low temperature",ptnz$EVTYPE,ignore.case=TRUE), "Cold",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("frost",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Cold",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("cold",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Cold",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("tsunami",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Waves",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("typhoon",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Hurricane",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("hurricane",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Hurricane",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("funnel",ptnz$EVTYPE,ignore.case=TRUE),"Tornado",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("waterspout",ptnz$EVTYPE,ignore.case=TRUE),"Tornado",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("tornado",ptnz$EVTYPE,ignore.case=TRUE),
+#                    "Tornado",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("high tide",ptnz$EVTYPE,ignore.case=TRUE), "High/Low Tide",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("high tide",ptnz$EVTYPE,ignore.case=TRUE), "High/Low Tide",ptnz$TYPE)
+# ptnz$TYPE<-ifelse(grepl("high surf",ptnz$EVTYPE,ignore.case=TRUE), "Waves",ptnz$TYPE)
+# ptnzp<-aggregate(PROPDMG ~ TYPE, data=ptnz, sum)
+# ptnzp<-ptnzp[order(ptnzp$PROPDMG),]
+# ptnzp<-ptnzp[ptnzp$PROPDMG>100,]
+# ptnzp<-ptnzp[order(ptnzp$PROPDMG),]
+# 
+# ptnzp$TYPE <- factor(ptnzp$TYPE, levels = c(
+#                           "High/Low Tide",
+#                           "Other",
+#                           "Heat",
+#                           "Waves",
+#                           "Fog",
+#                           "Land/Mudslide",
+#                           "Hurricane",
+#                           "Fire",
+#                           "Rain",
+#                           "Cold",
+#                           "Snow",
+#                           "Lightning",
+#                           "Ice", 
+#                           "Flood",
+#                           "Wind",
+#                           "Tornado"))
+# 
+# ptnzp<-ptnzp[c("TYPE","PROPDMG")]
+# library(scales)
+# 
+# my_grob3 = grobTree(textGrob("Caption: Property damages by weather.", x=0.005,  y=0.92, hjust=0,
+#   gp=gpar(col="black", fontsize=15)))
+# 
+# ggplot(ptnzp, aes(x = ptnzp$TYPE, y = ptnzp$PROPDMG, fill=ptnzp$TYPE)) + geom_bar(stat = "identity") + theme(axis.text.x=element_text(angle=-90,hjust=0,vjust=0.5)) + labs(title = "FIGURE 3: WEATHER & PROPERTY DAMAGE", x = "WEATHER EVENT TYPE", y = "US DOLLARS") + scale_fill_discrete(name="Weather Event Type") + annotation_custom(my_grob3) + scale_y_continuous(labels = comma) 
+# 
+```
+
+11. Here I write out the **Results** section and **Deaths** subsection in markdown.
+```{r}
+# 
+# ###Results
+# 
+# **Deaths**
+# 
+# During the second half of the twentieth century and the first decade of this century, weather in the USA has claimed at least 
+# 15,136 lives. More than one third of the deaths (5664) were from tornados. Just over 3,000 persons perished from heat-related weather events. Floods took the somewhat less, but staggering 1557 lives. More detail is in Table 1 below.
+```
+
+12. Here I build a table that gives the exact numbers of deaths by weather type, and which was used to build Figure 1.
+```{r}
+# ftnzp<-aggregate(FATALITIES ~ TYPE, data=ftnz, sum)
+# ftnzp<-ftnzp[order(ftnzp$FATALITIES),]
+# ftnzp<-ftnzp[ftnzp$FATALITIES>10,]
+# 
+# Weather<-ftnzp$TYPE
+# Deaths<-ftnzp$FATALITIES
+# tab<-as.data.frame(cbind(Weather,Deaths))
+# colnames(tab)<-c("Weather","Deaths")
+# kable(tab, caption="Table 1: Deaths From Weather (1955-2011")
+```
+
+13. Here I write out the **Results** section and **Injuries** subsection in markdown.
+```{r}
+# **Injuries**
+# 
+# During the same time period, tornados were the largest weather related event that caused 91,439 injuries, which accounted for 65% of the total reported injuries. All other weather related injury reportings were a small fraction of this number. Please see Table 2 for more detail.
+# 
+```
+
+14. Here I build a table that gives the exact numbers of injuries by weather type, and which was used to build Figure 2.
+```{r}
+# 
+# itnzp<-aggregate(INJURIES ~ TYPE, data=itnz, sum)
+# itnzp<-itnzp[order(itnzp$INJURIES),]
+# itnzp<-itnzp[itnzp$INJURIES>10,]
+# 
+# Weather<-itnzp$TYPE
+# Injuries<-itnzp$INJURIES
+# tab<-as.data.frame(cbind(Weather,Injuries))
+# colnames(tab)<-c("Weather","Injuries")
+# kable(tab, caption="Table 2: Injuries From Weather (1955-2011)")
+```
+
+15. Here I write out the **Results** section and **Property Damages** subsection in markdown.
+```{r}
+# **Property Damages**
+# 
+# Based upon the data provided, during the period 1955 through 2011, tornados cost the United States or its citizens $3,225,513.81. High winds were also economically costly and caused $3,137,447.29 in damage. Finally, the next type of weather event that was similar to these two was flooding, which cost America 
+# $2,461,324.54. Please see Table 3 for more detail.
+```
+
+16. Here I build a table that gives the exact numbers of property damages by weather type, and which was used to build Figure 3.
+```{r}
+# 
+# ptnzp<-aggregate(PROPDMG ~ TYPE, data=ptnz, sum)
+# ptnzp<-ptnzp[order(ptnzp$PROPDMG),]
+# ptnzp<-ptnzp[ptnzp$PROPDMG>100,]
+# 
+# Weather<-ptnzp$TYPE
+# PropertyDamage<-ptnzp$PROPDMG
+# tab<-as.data.frame(cbind(Weather,PropertyDamage))
+# colnames(tab)<-c("Weather","Dollars")
+# kable(tab, caption="Table 3: Property Damage From Weather (1955-2011)")
+```
+
+17. This concludes the **steps in the data analysis** section.
