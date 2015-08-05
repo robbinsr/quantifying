@@ -1,0 +1,1 @@
+You are reading the README.md file in the quantifying_an_effect GitHub repository that stores the files quantifying_an_effect.html as well as quantifying_an_effect.Rmd. Select the quantifying_an_effect link above to view the files.
