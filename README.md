@@ -1,4 +1,4 @@
-You are reading the README.md file in the **quantifying** GitHub repository, for Russ Robbins. This repository stores the files quantifying.html as well as quantifying.Rmd. Select the **quantifying** link above to view the files.
+You are reading the README.md file in the **quantifying** GitHub repository associated with Russ Robbins. This repository stores the files quantifying.html as well as quantifying.Rmd. Select the **quantifying** link above to view the files.
 
 This work pretends it is answering questions for the National Oceanic and Atmospheric Administration agency.
 
